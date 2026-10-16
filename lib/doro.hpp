@@ -178,8 +178,30 @@ public:
 
   SparseVector* values() { return values_.get(); }
 
+  // Spatial coupling (Walzer's scheme, as adapted by METTLE; see sc_study/REPORT.md).
+  // Each element x is hashed to a position s(x) in [0, size - window], and its k counters are
+  // drawn (distinct) from the window [s(x), s(x) + window). With tle, the first counter is s(x)
+  // itself (METTLE's leading edge). Both parties must enable it with identical arguments before
+  // encoding. The MP decoder in doro_decoder.hpp is NOT recommended with this mode; use
+  // ScBpDecoder (sc_decoder.hpp) instead.
+  void enable_spatial_coupling(int window, bool tle, uint32_t seed) {
+    if (window < 4 * k_ || window > size())
+      throw std::invalid_argument("spatial coupling window must be in [4k, size]");
+    sc_window_ = window;
+    sc_tle_ = tle;
+    // doubled ranges carry a sign bit for non-CBF codes, like hash_funcs_
+    sc_pos_hash_ = ONIAK::WYHash(/*mask*/ 0, /*mod*/ 2 * (size() - window + 1), seed);
+    sc_offset_hashes_.clear();
+    for (auto& hfunc : hash_funcs_)
+      sc_offset_hashes_.emplace_back(/*mask*/ 0, /*mod*/ 2 * window, hfunc.seed());
+  }
+
+  int sc_window() const { return sc_window_; }
+  bool sc_tle() const { return sc_tle_; }
+
   // each value is an (index, sign) pair
   std::vector<std::pair<int, int>> hash_all(IndexType x) const {
+    if (sc_window_ > 0) return hash_all_coupled(x);
     std::vector<std::pair<int, int>> all_hashes;
     all_hashes.reserve(k_);
     for (auto& hfunc : hash_funcs_) {
@@ -194,6 +216,28 @@ public:
     throw std::runtime_error("Error: Run out of hash functions.");
   }
 
+  std::vector<std::pair<int, int>> hash_all_coupled(IndexType x) const {
+    std::vector<std::pair<int, int>> all_hashes;
+    all_hashes.reserve(k_);
+    const int num_positions = size() - sc_window_ + 1;
+    int pos_value = sc_pos_hash_.hash_in_range(x);
+    int position = (pos_value >= num_positions) ? pos_value - num_positions : pos_value;
+    if (sc_tle_)
+      all_hashes.emplace_back(position, (is_cbf_ || pos_value < num_positions) ? 1 : -1);
+    for (auto& hfunc : sc_offset_hashes_) {
+      if (all_hashes.size() == static_cast<size_t>(k_)) return all_hashes;
+      int hash_value = hfunc.hash_in_range(x);
+      int offset = (hash_value >= sc_window_) ? hash_value - sc_window_ : hash_value;
+      int sign = (is_cbf_ || hash_value < sc_window_) ? 1 : -1;
+      int idx = position + offset;
+      if (!std::ranges::contains(all_hashes, idx, [](auto x) {return x.first;}))
+        all_hashes.emplace_back(idx, sign);
+      // otherwise reject this sample.
+    }
+    if (all_hashes.size() == static_cast<size_t>(k_)) return all_hashes;
+    throw std::runtime_error("Error: Run out of hash functions.");
+  }
+
   bool is_cbf() const { return is_cbf_; }
 
   bool empty() const {
@@ -205,6 +249,10 @@ public:
     DoroCode copy(size(), k_, is_cbf_, rng, lb_, ub_, values_ != nullptr);
     copy.arr_ = arr_;
     copy.hash_funcs_ = hash_funcs_;
+    copy.sc_window_ = sc_window_;
+    copy.sc_tle_ = sc_tle_;
+    copy.sc_pos_hash_ = sc_pos_hash_;
+    copy.sc_offset_hashes_ = sc_offset_hashes_;
     if (values_) {
       copy.values_ = std::make_unique<SparseVector>(*values_);
     }
@@ -223,6 +271,11 @@ private:
   // if lb >= ub, then quantization is not in effect.
   ArrType lb_, ub_;
   float interval_; // ub - lb
+  // spatial coupling; disabled when sc_window_ == 0
+  int sc_window_ = 0;
+  bool sc_tle_ = false;
+  ONIAK::WYHash sc_pos_hash_;
+  std::vector<ONIAK::WYHash> sc_offset_hashes_;
 };
 
 } // namespace Doro

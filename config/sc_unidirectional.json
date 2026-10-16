@@ -1,0 +1,17 @@
+{
+  "seed": 1,
+  "universe": 2000000,
+  "A size": 1000000,
+  "B size": 1010000,
+  "A minus B size": 0,
+  "k": 8,
+  "d": 46000,
+  "sc window fraction": 0.05,
+  "sc tle": true,
+  "decoder": "bp",
+  "max num peels": 25000,
+  "max comm rounds": 1,
+  "counting": true,
+  "resolving round": -1,
+  "result filename": "result/sc_unidirectional.json"
+}

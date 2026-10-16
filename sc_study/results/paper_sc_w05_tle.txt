@@ -1,0 +1,10 @@
+# n=1000000 d=10000 k=8, matrix=sc wfrac=0.05 offsets=tle; peel trials=16, bp trials=8 bp_iters=1500 bp_rounds=1 (summarize.py output)
+sc      W=2200   off=tle     dec=peel  l/d=4.40 succ=  0/16  silent=0 undec=269164 it=0 t=0.12s  H/LB=1.279 CSg/LB=1.556 CSa/LB=1.521
+sc      W=2300   off=tle     dec=peel  l/d=4.60 succ=  0/16  silent=0 undec=226317 it=0 t=0.10s  H/LB=1.317 CSg/LB=1.595 CSa/LB=1.560
+sc      W=2400   off=tle     dec=peel  l/d=4.80 succ=  1/16  silent=0 undec=140030 it=0 t=0.13s  H/LB=1.353 CSg/LB=1.641 CSa/LB=1.605
+sc      W=2500   off=tle     dec=peel  l/d=5.00 succ= 13/16  silent=0 undec=8254 it=0 t=0.16s  H/LB=1.389 CSg/LB=1.689 CSa/LB=1.652
+sc      W=1900   off=tle     dec=bp    l/d=3.80 succ=  0/8   silent=0 undec=379708 it=1500 t=854.96s  H/LB=1.161 CSg/LB=1.389 CSa/LB=1.359
+sc      W=2000   off=tle     dec=bp    l/d=4.00 succ=  0/8   silent=0 undec=331673 it=1500 t=739.36s  H/LB=1.202 CSg/LB=1.445 CSa/LB=1.413
+sc      W=2100   off=tle     dec=bp    l/d=4.20 succ=  0/8   silent=0 undec=298741 it=1500 t=726.70s  H/LB=1.241 CSg/LB=1.503 CSa/LB=1.470
+sc      W=2200   off=tle     dec=bp    l/d=4.40 succ=  8/8   silent=0 undec=0 it=479 t=118.41s  H/LB=1.279 CSg/LB=1.556 CSa/LB=1.521
+

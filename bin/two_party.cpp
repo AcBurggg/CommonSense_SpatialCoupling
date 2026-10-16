@@ -12,6 +12,7 @@
 #include "oniakTimer/otime.h"
 #include "nlohmann/json.hpp"
 #include <doro/iblt.h>
+#include <doro/sc_decoder.hpp>
 
 #include <algorithm>
 #include <bitset>
@@ -291,6 +292,16 @@ int main(int argc, char* argv[]) {
 
   int k = config.at("k");
   int d = config.at("d");
+  // Spatial coupling and decoder choice (see sc_study/REPORT.md). Defaults keep the original
+  // protocol: uniform matrix and the MP ping-pong decoder.
+  int sc_window = 0;
+  if (config.contains("sc window")) sc_window = config.at("sc window");
+  else if (config.contains("sc window fraction"))
+    sc_window = static_cast<int>(std::lround(config.at("sc window fraction").get<double>() * d));
+  bool sc_tle = config.contains("sc tle") && config.at("sc tle").get<bool>();
+  std::string decoder_choice = config.contains("decoder") ? config.at("decoder").get<std::string>() : "mp";
+  // With coupling, the bulk counters carry the load of d - sc_window + 1 positions.
+  int bulk_counters = (sc_window > 0) ? d - sc_window + 1 : d;
   std::string save_path = config.at("result filename");
   int max_comm_rounds = 20;
   if (config.contains("max comm rounds")) max_comm_rounds = config.at("max comm rounds");
@@ -334,11 +345,12 @@ int main(int argc, char* argv[]) {
 
   auto rng = std::mt19937(seed);
 
-  auto auto_parameter = doro_parameter_tuning(d, k, A_minus_B_size, B_minus_A_size, bch_cap, diff_coding_error);
+  auto auto_parameter = doro_parameter_tuning(bulk_counters, k, A_minus_B_size, B_minus_A_size, bch_cap, diff_coding_error);
   cout << "Automatically selected the following parameters: " << endl;
   print_doro_parameter(auto_parameter);
 
   DoroCodeType doro(d, k, counting, rng, auto_parameter.lb, auto_parameter.ub, track_values);
+  if (sc_window > 0) doro.enable_spatial_coupling(sc_window, sc_tle, rng());
   // copy to keep the same set of hash functions
   auto first_round_code = doro.copy();
   unordered_map<IndexType, CounterType> Bela_coef, Alis_coef;
@@ -477,6 +489,28 @@ int main(int argc, char* argv[]) {
   if (resolving_round < 0) {
     decoder_alis.enter_resolving();
     decoder_bela.enter_resolving();
+  }
+
+  // Peeling + BP decoder (unidirectional only). On success the protocol finishes in one round;
+  // otherwise the code is untouched and the original MP rounds / IBLT fallback run as before.
+  if (decoder_choice == "bp") {
+    if (A_minus_B_size != 0 || !counting) {
+      println("Error: decoder \"bp\" currently supports unidirectional SetX (A subset of B) with counting codes.");
+      exit(1);
+    }
+    ScBpDecoder<DoroCodeType> sc_decoder(doro, setB);
+    bool decoded = sc_decoder.decode();
+    config["bp iterations"] = sc_decoder.bp_iterations();
+    config["bp undecided"] = sc_decoder.num_undecided();
+    if (decoded) {
+      actual_comm_rounds = 1;
+      config["time"].push_back(sw.peek());
+      config["num peels"].push_back(doro.num_peels());
+      success = get_sizes(sc_decoder.result(), decoder_alis.result(), setA_minus_B, setB_minus_A, config, doro);
+      status = Status::Finished;
+    } else {
+      cout << "BP decoder did not reach zero residual. Falling back to MP." << endl;
+    }
   }
 
   while (!doro.empty() && comm_rounds < max_comm_rounds && status != Status::Finished) {

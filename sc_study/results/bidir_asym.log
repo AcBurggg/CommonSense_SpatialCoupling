@@ -1,0 +1,11 @@
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=4.0 matrix=uniform decoder=mp
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=5.0 matrix=uniform decoder=mp
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=6.0 matrix=uniform decoder=mp
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=7.0 matrix=uniform decoder=mp
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=3.0 matrix=uniform decoder=bp max_rounds=40
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=4.0 matrix=uniform decoder=bp max_rounds=40
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=5.0 matrix=uniform decoder=bp max_rounds=40
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=2.5 matrix=sc wfrac=0.05 offsets=tle decoder=bp max_rounds=40
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=3.0 matrix=sc wfrac=0.05 offsets=tle decoder=bp max_rounds=40
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=3.5 matrix=sc wfrac=0.05 offsets=tle decoder=bp max_rounds=40
++ n=100000 dA=200 dB=2000 k=5 trials=8 ratio=4.0 matrix=sc wfrac=0.05 offsets=tle decoder=bp max_rounds=40

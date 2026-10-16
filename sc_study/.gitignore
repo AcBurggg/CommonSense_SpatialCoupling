@@ -1,0 +1,5 @@
+sc_sim
+sc_sim_dev
+test_sc_decoder
+__pycache__/
+bidir_sim
