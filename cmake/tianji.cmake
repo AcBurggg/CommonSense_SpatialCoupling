@@ -22,7 +22,7 @@ function(AutoBuild)
     foreach(F ${INC})
         file(RELATIVE_PATH R ${CMAKE_CURRENT_SOURCE_DIR}/${AUTO_LIB_DIR} ${F})
         get_filename_component(D ${R} DIRECTORY)
-        file(CREATE_LINK ${F} ${CMAKE_BINARY_DIR}/include/${CMAKE_PROJECT_NAME}/${R})
+        file(CREATE_LINK ${F} ${CMAKE_BINARY_DIR}/include/${CMAKE_PROJECT_NAME}/${R} SYMBOLIC)
         install(FILES ${F} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${CMAKE_PROJECT_NAME}/${D})
     endforeach(F R D)
     # Configure Build Target

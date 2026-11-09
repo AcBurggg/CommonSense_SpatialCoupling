@@ -23,6 +23,21 @@ build/bin/two_party_iblt example12.json
 build/bin/two_party_i64  example12.json
 ```
 
+### Docker (macOS, or any machine without g++-14)
+
+`docker/` contains a pinned GCC 14 environment. Only Docker is required:
+```bash
+docker/run.sh image                                   # build the image (once)
+docker/run.sh build                                   # configure + compile (Release)
+docker/run.sh two_party config/sc_unidirectional.json # run a config
+docker/run.sh sims                                    # build the sc_study simulators
+docker/run.sh shell                                   # interactive shell
+```
+The repo is mounted at `/work`, so configs and results are shared with the host;
+relative `result filename`s are resolved from the repo root, and their directory must exist.
+The build tree is kept in the Docker volume `commonsense-build` (binaries at `/build/bin`),
+because the third-party builds need a case-sensitive filesystem.
+
 ## Reproducing Experiments
 
 ### Synthetic Data (Small Experiments)

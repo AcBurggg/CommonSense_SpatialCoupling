@@ -175,12 +175,15 @@ int main(int argc, char* argv[]) {
   config["success"] = success;
   config["time"] = sw.peek();
 
-  FILE* file = fopen("/proc/self/status", "r");
-  char line[128];
-  while (fgets(line, 128, file) != NULL) {
-    if (strstr(line, "VmHWM:") != NULL) {
-      config["peak memory"] = line;
+  FILE *file = fopen("/proc/self/status", "r");  // Linux only
+  if (file != NULL) {
+    char line[128];
+    while (fgets(line, 128, file) != NULL) {
+      if (strstr(line, "VmHWM:") != NULL) {
+        config["peak memory"] = line;
+      }
     }
+    fclose(file);
   }
   fout << std::setw(4) << config << endl;  // indent 4
   return 0;

@@ -233,6 +233,29 @@ Success counts per measured `l/d` (16 trials for MP/peeling, 8 for coupled BP), 
 | 4 | uniform | peeling | 7.2: 2 · 7.4: 16/16 | 7.4 |
 | 4 | coupled 5%, TLE | peeling | 6.4: 13/16 | > 6.4 |
 
+### 4.1 Validation in the real `two_party` binary
+
+The table above comes from `sc_sim`. The same points were then run through the real
+`two_party` (built with GCC 14 in `docker/`), 5 seeds each, k = 8, `"max comm rounds": 1`
+(`results/real_binary.jsonl`; lower bound 80,929 bits):
+
+| matrix | decoder | l/d | succeeded within budget | avg bits | × LB | `sc_sim` |
+|---|---|---|---|---|---|---|
+| uniform | MP (paper) | 7.8 | 5/5 | 188,757 | 2.33 | 2.31 |
+| uniform | MP (paper) | 7.6 | 2/5 | 184,809 | 2.28 | 4/16 succeed |
+| uniform | BP | 5.8 | 5/5 | 150,310 | 1.86 | 1.86 |
+| coupled 5%, TLE | BP | 4.6 | 5/5 | 129,571 | 1.60 | — |
+| coupled 5%, TLE | BP | 4.4 | 5/5 | 126,087 | 1.56 | 1.56 |
+| coupled 5%, TLE | BP | 4.2 | 4/5 | 122,132 | 1.51 | 0/8 succeed |
+
+Every BP success ended with 0 undecided elements and was decoded by `ScBpDecoder` alone.
+`two_party` reports `"success": true` even when the first message fails and the leftover is
+finished by the fallback path, so "within budget" counts runs whose total cost stayed at the
+first-message cost. The failures cost 4.6–7.5 Mbit: the three MP runs at 7.6d, and the 4.2d BP
+run that fell back to MP. Coupled BP at 4.2d mostly succeeds in the real binary but needs
+12–30 minutes of decimation rounds (`ScBpConfig`: 1500 iterations, 30 rounds), against under
+a minute at ≥ 4.4d, so 4.4d stays the practical threshold.
+
 ## 5. Parameter findings
 
 * **Window.** For BP, 5% and 10% of `l` give the same threshold (4.4d). A 2% window makes the
@@ -419,7 +442,8 @@ and the cost of the first message as `entropy_bits` (Σ_j H(Poisson(λ_j))), `cs
 `lower_bound_bits = log2 C(|B|, |B \ A|)`.
 
 The real-code path (`two_party` with `config/sc_unidirectional.json`) needs the original build
-(g++-14, `cmake`). `test_sc_decoder.cpp` exercises the patched `DoroCode` and `ScBpDecoder`
+(g++-14, `cmake`); on macOS or without g++-14 use `docker/run.sh image && docker/run.sh build`,
+then `docker/run.sh two_party config/sc_unidirectional.json` (see README). `test_sc_decoder.cpp` exercises the patched `DoroCode` and `ScBpDecoder`
 directly and builds with Apple clang (`-std=c++2b`) given the wyhash headers and a stub for the
 Eigen include in `libONIAK/global.h`.
 

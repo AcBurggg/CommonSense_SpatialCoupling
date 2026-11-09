@@ -28,6 +28,8 @@ find_package(Threads REQUIRED)
 
 if(CMAKE_BUILD_TYPE MATCHES "Release")
     add_compile_options(-O3 -Werror -Wall -Wno-attributes -DNDEBUG)
+    # Eigen 3.4.0's ARM NEON code trips -Wclass-memaccess (not hit on x86)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-error=class-memaccess>)
 elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
     add_compile_options(-fsanitize=address)
     add_link_options(-fsanitize=address)
@@ -92,7 +94,7 @@ Git(
     INCLUDE_DIR "${CMAKE_BINARY_DIR}/3rd_party_download/wangyi-fudan"
 )
 Git(
-    SITE   "git@github.com"
+    SITE   "https://github.com"
     USER    "Y-jiji"
     REPO   "rans-fix"
     BRANCH "master"
