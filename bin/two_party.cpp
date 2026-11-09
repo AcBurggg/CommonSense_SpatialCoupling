@@ -493,6 +493,7 @@ int main(int argc, char* argv[]) {
 
   // Peeling + BP decoder (unidirectional only). On success the protocol finishes in one round;
   // otherwise the code is untouched and the original MP rounds / IBLT fallback run as before.
+  bool primary_decoder_success = false;
   if (decoder_choice == "bp") {
     if (A_minus_B_size != 0 || !counting) {
       println("Error: decoder \"bp\" currently supports unidirectional SetX (A subset of B) with counting codes.");
@@ -500,6 +501,7 @@ int main(int argc, char* argv[]) {
     }
     ScBpDecoder<DoroCodeType> sc_decoder(doro, setB);
     bool decoded = sc_decoder.decode();
+    primary_decoder_success = decoded;
     config["bp iterations"] = sc_decoder.bp_iterations();
     config["bp undecided"] = sc_decoder.num_undecided();
     if (decoded) {
@@ -525,6 +527,7 @@ int main(int argc, char* argv[]) {
       config["time"].push_back(sw.peek());
       config["num peels"].push_back(num_peels);
       success = success || get_sizes(decoder.result(), other_decoder.result(), setA_minus_B, setB_minus_A, config, doro);
+      primary_decoder_success = success;
       break;
     }
 
@@ -627,6 +630,7 @@ int main(int argc, char* argv[]) {
   config["total communication cost"] = total_comm_cost;
   config["total theoretical entropy cost"] = std::accumulate(config.at("theoretical entropy costs").begin(),
     config.at("theoretical entropy costs").end(), 0.0, [](double sum, const json& val) { return sum + val.get<double>(); });
+  config["primary decoder success"] = primary_decoder_success;
   config["success"] = success;
 
   FILE *file = fopen("/proc/self/status", "r");  // Linux only

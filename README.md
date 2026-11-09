@@ -38,6 +38,40 @@ relative `result filename`s are resolved from the repo root, and their directory
 The build tree is kept in the Docker volume `commonsense-build` (binaries at `/build/bin`),
 because the third-party builds need a case-sensitive filesystem.
 
+### Reproducible unidirectional comparison
+
+To compare the original decoder with spatial coupling, build the binaries and run the paired
+benchmark from the repository root:
+
+```bash
+docker/run.sh image
+docker/run.sh build
+docker/run.sh benchmark --trials 20
+```
+
+The benchmark uses `A ⊂ B`, `|A| = 1,000,000`, `|B \\ A| = 10,000`, `k = 8`, and the same
+dataset seeds for each method. It sweeps counters per difference element (`d / |B \\ A|`) around
+each method's expected operating point and compares:
+
+* `original_mp`: the original uniform matrix and MP decoder;
+* `uniform_bp`: uniform matrix with the new BP decoder, isolating the decoder upgrade;
+* `spatial_bp`: 5%-window spatial coupling with BP, isolating coupling against `uniform_bp`.
+
+All runs allow one communication round before the existing IBLT fallback. The output is stored
+under `result/unidirectional_benchmark/`, shared with the host: individual configs, result JSON,
+logs, `runs.csv`, and aggregated `summary.csv`. The summary reports primary-decoder and
+end-to-end success rates, modeled communication bits (including fallback when used), bits relative
+to the counting lower bound, protocol time, communication rounds, and peak memory. The minimum
+tested `d / |B \\ A|` achieving at least 95% primary-decoder success is the principal counter
+efficiency metric; compare `original_mp` to `spatial_bp` for the overall change and `uniform_bp` to
+`spatial_bp` to attribute the change to coupling. If 95% success is not reached within a variant's
+sweep, widen that variant's ratios in `script/benchmark_unidirectional.py` and rerun.
+
+Seeds default to 1 onward. Adjust the workload or seed range with, for example,
+`docker/run.sh benchmark --trials 20 --seed-start 21 --a-size 100000 --delta-size 1000`.
+The 95% threshold is empirical rather than a statistical guarantee; use more trials for stronger
+evidence. The benchmark records raw per-run data so results can be independently checked.
+
 ## Reproducing Experiments
 
 ### Synthetic Data (Small Experiments)

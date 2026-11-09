@@ -3,6 +3,7 @@
 #
 #   docker/run.sh image                  build the Docker image (once)
 #   docker/run.sh build [Debug|Release]  configure + compile into the build volume
+#   docker/run.sh benchmark [OPTIONS]    run the paired unidirectional benchmark sweep
 #   docker/run.sh sims                   compile sc_study/sc_sim and sc_study/bidir_sim (Linux binaries)
 #   docker/run.sh two_party CONFIG.json  run a binary (two_party, two_party_iblt, two_party_i64)
 #   docker/run.sh shell                  interactive shell in the container
@@ -31,6 +32,8 @@ case "$cmd" in
     docker build -t "$IMAGE" "$REPO/docker" ;;
   build)
     run bash -c "cmake -S . -B /build -DCMAKE_BUILD_TYPE=${1:-Release} && cmake --build /build -j\$(nproc)" ;;
+  benchmark)
+    run python3 /work/script/benchmark_unidirectional.py "$@" ;;
   sims)
     run bash -c "mkdir -p /build/sc_study && \
       g++ -O3 -std=c++17 -o /build/sc_study/sc_sim sc_study/sc_sim.cpp -lpthread && \
